@@ -4,6 +4,9 @@ import os
 from time import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from urllib.parse import urlencode
+import logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
 
 app = Flask(__name__)
 
@@ -14,11 +17,14 @@ def make_request(url, params):
         else:
             url_with_params = url
 
+        logging.info(f"Making request to URL: {url_with_params}")
         response = requests.get(url_with_params)
 
+        logging.info(f"Received response with status code: {response.status_code} for URL: {url_with_params}")
         if response.status_code == 200:
             return response.json()
-    except requests.RequestException:
+    except requests.RequestException as e:
+        logging.error(f"Request to URL: {url_with_params} failed with exception: {e}")
         return None
 
     return None

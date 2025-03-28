@@ -15,5 +15,10 @@ This is a Flask-based API that sends multiple requests to a list of URLs and ret
 - Flask 3.1.0
 - Requests 2.32.3
 
-# Endpoints:
+### Environment Variables
+
+- `NUM_REQUESTS`: The number of times each URL will be requested (default: 3).
+- `URLS`: A comma-separated list of target URLs.
+
+## Endpoints:
 - [GET] /get: Any query parameters passed to this endpoint will be forwarded to the target URLs.
