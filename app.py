@@ -18,9 +18,10 @@ def make_request(url, params):
             url_with_params = url
 
         logging.info(f"Making request to URL: {url_with_params}")
+        start = time()
         response = requests.get(url_with_params)
 
-        logging.info(f"Received response with status code: {response.status_code} for URL: {url_with_params}")
+        logging.info(f"Received response with status code: {response.status_code} for URL: {url_with_params} after {time.time() - start:.2f} seconds")
         if 200 <= response.status_code < 300:
             return response.json()
     except requests.RequestException as e:
@@ -60,8 +61,8 @@ def get_first_successful():
     if result:
         return jsonify({
             'status': 'success',
-            'response': result,
-            'time_taken': end_time - start_time
+            'data': result,
+            'time_taken': round(end_time - start_time, 6)
         }), 200
     else:
         return jsonify({'status': 'failed', 'message': 'No successful response'}), 500
