@@ -21,7 +21,7 @@ def make_request(url, params):
         start = time()
         response = requests.get(url_with_params)
 
-        logging.info(f"Received response with status code: {response.status_code} for URL: {url_with_params} after {time.time() - start:.2f} seconds")
+        logging.info(f"Received response with status code: {response.status_code} for URL: {url_with_params} after {time() - start:.2f} seconds")
         if 200 <= response.status_code < 300:
             return response.json()
     except requests.RequestException as e:
