@@ -21,7 +21,7 @@ def make_request(url, params):
         response = requests.get(url_with_params)
 
         logging.info(f"Received response with status code: {response.status_code} for URL: {url_with_params}")
-        if response.status_code == 200:
+        if 200 <= response.status_code < 300:
             return response.json()
     except requests.RequestException as e:
         logging.error(f"Request to URL: {url_with_params} failed with exception: {e}")
