@@ -2,7 +2,8 @@ from flask import Flask, jsonify, request
 import requests
 import os
 from time import time
-from concurrent.futures import ThreadPoolExecutor, as_completed
+import queue
+import threading
 from urllib.parse import urlencode
 import logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -10,7 +11,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 app = Flask(__name__)
 
-def make_request(url, params):
+def make_request(url, params, result_queue):
     try:
         if params:
             url_with_params = f"{url}?{urlencode(params)}"
@@ -23,25 +24,27 @@ def make_request(url, params):
 
         logging.info(f"Received response with status code: {response.status_code} for URL: {url_with_params} after {time() - start:.2f} seconds")
         if 200 <= response.status_code < 300:
-            return response.json()
+            result_queue.put(response.json())
     except requests.RequestException as e:
         logging.error(f"Request to URL: {url_with_params} failed with exception: {e}")
-        return None
+        result_queue.put(None)
 
-    return None
 
 def get_first_successful_response(urls, n, params):
-    with ThreadPoolExecutor() as executor:
-        futures = []
-        for _ in range(n):
-            for url in urls:
-                futures.append(executor.submit(make_request, url, params))
-
-        for future in as_completed(futures):
-            result = future.result()
-            if result:
-                return result
-
+    result_queue = queue.Queue()
+    threads = []
+    for _ in range(n):
+        for url in urls:
+            t = threading.Thread(target=make_request, args=(url, params, result_queue))
+            threads.append(t)   
+            t.start()
+    while True:
+        result = result_queue.get()
+        if result is not None:
+            print(f"First non-null result: {result}")
+            return result
+        if all(not t.is_alive() for t in threads):
+            break
     return None
 
 @app.route('/get', methods=['GET'])
