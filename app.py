@@ -27,10 +27,9 @@ def make_request(url, params, result_queue):
             result_queue.put(response.json())
     except requests.RequestException as e:
         logging.error(f"Request to URL: {url_with_params} failed with exception: {e}")
-        result_queue.put(None)
 
 
-def get_first_successful_response(urls, n, params):
+def get_first_successful_response(urls, n, params, timeout):
     result_queue = queue.Queue()
     threads = []
     for _ in range(n):
@@ -38,11 +37,16 @@ def get_first_successful_response(urls, n, params):
             t = threading.Thread(target=make_request, args=(url, params, result_queue))
             threads.append(t)   
             t.start()
-    while True:
-        result = result_queue.get()
-        if result is not None:
-            print(f"First non-null result: {result}")
-            return result
+    
+    start_time = time()
+    while time() - start_time < timeout:
+        try:
+            result = result_queue.get(timeout=0.1)
+            if result is not None:
+                logging.info(f"First successful result: {result}")
+                return result
+        except queue.Empty:
+            pass
         if all(not t.is_alive() for t in threads):
             break
     return None
@@ -57,6 +61,8 @@ def manage_health():
 def get_first_successful():
     n = int(os.getenv('NUM_REQUESTS', 3))
     urls_str = os.getenv('URLS', '')
+    timeout = int(os.getenv('TIMEOUT', 300))
+
     if not urls_str:
         return jsonify({'status': 'failed', 'message': 'URLs not provided in environment variables'}), 400
 
@@ -64,7 +70,7 @@ def get_first_successful():
     params = request.args.to_dict()
 
     start_time = time()
-    result = get_first_successful_response(urls, n, params)
+    result = get_first_successful_response(urls, n, params, timeout)
     end_time = time()
 
     if result:
@@ -74,7 +80,11 @@ def get_first_successful():
             'time_taken': round(end_time - start_time, 6)
         }), 200
     else:
-        return jsonify({'status': 'failed', 'message': 'No successful response'}), 500
+        return jsonify({
+            'status': 'failed', 
+            'message': 'No successful response',
+            'time_taken': round(end_time - start_time, 6)
+        }), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
