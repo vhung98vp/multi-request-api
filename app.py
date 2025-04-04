@@ -47,6 +47,12 @@ def get_first_successful_response(urls, n, params):
             break
     return None
 
+
+@app.route('/manage/health', methods=['GET'])
+def manage_health():
+    return jsonify({"status": True}), 200
+
+
 @app.route('/get', methods=['GET'])
 def get_first_successful():
     n = int(os.getenv('NUM_REQUESTS', 3))
